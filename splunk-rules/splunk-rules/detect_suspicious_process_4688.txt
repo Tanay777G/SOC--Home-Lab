@@ -1,0 +1,18 @@
+# Detection: Suspicious Process Creation
+# MITRE ATT&CK: T1059 - Command and Scripting Interpreter
+# Tactic: Execution
+# Event ID: 4688 - A new process has been created
+# Severity: MEDIUM-HIGH
+# Description: Detects execution of commonly abused living-off-the-land binaries (LOLBins)
+
+index=windows EventCode=4688
+| eval suspicious_process=if(
+    match(New_Process_Name, "(?i)(powershell|cmd|wscript|cscript|mshta|rundll32|regsvr32|certutil|bitsadmin|wmic)"),
+    "YES", "NO")
+| where suspicious_process="YES"
+| stats count by New_Process_Name, Creator_Process_Name, host, Account_Name
+| eval mitre_technique="T1059 - Command and Scripting Interpreter"
+| eval kill_chain_stage="Execution"
+| eval severity=if(count > 10, "HIGH", "MEDIUM")
+| table _time, New_Process_Name, Creator_Process_Name, host, Account_Name, count, severity, mitre_technique
+| sort - count
