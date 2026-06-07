@@ -1,0 +1,18 @@
+# Detection: C2 Beaconing Behaviour
+# MITRE ATT&CK: T1071 - Application Layer Protocol
+# Tactic: Command and Control
+# Severity: CRITICAL
+# Description: Detects regular periodic outbound connections indicating C2 beaconing
+#              Beacons are identified by consistent intervals and low byte transfers
+
+index=network sourcetype=firewall action=allowed
+| bucket _time span=1h
+| stats count, avg(bytes_out), stdev(bytes_out) by dest_ip, src_ip, dest_port, _time
+| where count > 10 AND stdev(bytes_out) < 500
+| eval beacon_score=round((count / (stdev(bytes_out)+1)), 2)
+| where beacon_score > 5
+| eval mitre_technique="T1071 - Application Layer Protocol"
+| eval kill_chain_stage="Command and Control"
+| eval severity="CRITICAL"
+| table _time, src_ip, dest_ip, dest_port, count, beacon_score, severity, mitre_technique
+| sort - beacon_score
