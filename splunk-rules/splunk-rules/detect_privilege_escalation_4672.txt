@@ -1,0 +1,20 @@
+# Detection: Privilege Escalation - Special Privileges Assigned
+# MITRE ATT&CK: T1068 - Exploitation for Privilege Escalation
+# Tactic: Privilege Escalation
+# Event ID: 4672 - Special privileges assigned to new logon
+# Severity: HIGH
+# Description: Detects when high-value privileges are assigned to accounts
+#              that do not normally hold admin rights
+
+index=windows EventCode=4672
+| where NOT match(Account_Name, "(?i)(system|local service|network service|administrator)")
+| stats count by Account_Name, Privileges, host
+| eval high_value_priv=if(
+    match(Privileges, "SeDebugPrivilege|SeTcbPrivilege|SeLoadDriverPrivilege|SeTakeOwnershipPrivilege"),
+    "YES", "NO")
+| where high_value_priv="YES"
+| eval mitre_technique="T1068 - Exploitation for Privilege Escalation"
+| eval kill_chain_stage="Privilege Escalation"
+| eval severity="HIGH"
+| table _time, Account_Name, Privileges, host, count, severity, mitre_technique
+| sort - count
