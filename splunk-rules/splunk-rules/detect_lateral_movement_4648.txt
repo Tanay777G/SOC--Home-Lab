@@ -1,0 +1,17 @@
+# Detection: Lateral Movement via Explicit Credentials
+# MITRE ATT&CK: T1550.003 - Pass the Ticket / T1078 - Valid Accounts
+# Tactic: Lateral Movement
+# Event ID: 4648 - Logon using explicit credentials
+# Severity: HIGH
+# Description: Detects accounts using explicit credentials to access other systems
+#              which is a strong indicator of lateral movement post-compromise
+
+index=windows EventCode=4648
+| stats count by Account_Name, Target_Server_Name, src_ip, host
+| where count >= 3
+| eval mitre_technique="T1550 - Use Alternate Authentication Material"
+| eval kill_chain_stage="Lateral Movement"
+| eval severity="HIGH"
+| eval analyst_note="Investigate if Account_Name is a service account or human user"
+| table _time, Account_Name, Target_Server_Name, src_ip, host, count, severity, mitre_technique, analyst_note
+| sort - count
